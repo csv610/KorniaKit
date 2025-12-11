@@ -1,10 +1,10 @@
 # Kornia Computer Vision Tutorials
 
-A comprehensive collection of tutorials demonstrating computer vision operations using the **Kornia** PyTorch library.
+Tutorials for computer vision operations using the Kornia PyTorch library.
 
 ## About Kornia
 
-[Kornia](https://kornia.readthedocs.io/) is a library that consists of a set of algorithms to solve generic computer vision problems. It is built using PyTorch and provides GPU-accelerated operations for modern computer vision applications.
+[Kornia](https://kornia.readthedocs.io/) is a library of computer vision algorithms built with PyTorch. It provides GPU-accelerated operations for image processing.
 
 ## Repository Structure
 
@@ -88,6 +88,3 @@ Please refer to the appropriate license file for this project.
 - [PyTorch Documentation](https://pytorch.org/docs/)
 - [OpenCV Documentation](https://docs.opencv.org/)
 
----
-
-For more information about each tutorial category, see the README files in their respective directories.
