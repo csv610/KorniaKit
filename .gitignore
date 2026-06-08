@@ -42,6 +42,10 @@ env/
 .coverage
 htmlcov/
 
+# Linter / type checker caches
+.ruff_cache/
+.mypy_cache/
+
 # IDE files
 .sublime-project
 .sublime-workspace
