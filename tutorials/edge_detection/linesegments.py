@@ -1,41 +1,36 @@
-import sys
+"""Detect line segments using the SOLD² deep-learning detector.
 
-import cv2
-import kornia
-import numpy as np
-import torch
+Demonstrates:
+  - Using Kornia's SOLD2_detector for learned line-segment detection.
+  - Extracting endpoint coordinates from detected line segments.
+"""
+
+from tutorials._utils import load_image, parse_args
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python linesegments.py <image_path>")
-        sys.exit(1)
+    """Load an image, detect line segments, and print their coordinates."""
+    (filename,) = parse_args(1, "<image_path>")
 
-    filename = sys.argv[1]
-    img: np.ndarray | None = cv2.imread(filename)
-    if img is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
+    import kornia
+    import torch
 
-    print(img.shape)
-    img_t: torch.Tensor = kornia.image_to_tensor(img)
-    img_t = img_t[None, ...].float() / 255.0
+    img = load_image(filename)
 
-    img_t = kornia.color.bgr_to_rgb(img_t)
-    img_t = kornia.color.rgb_to_grayscale(img_t)
+    tensor: torch.Tensor = kornia.image.image_to_tensor(img)
+    tensor = tensor[None, ...].float() / 255.0
+    tensor = kornia.color.bgr_to_rgb(tensor)
+    tensor = kornia.color.rgb_to_grayscale(tensor)
 
-    print(img_t.shape)
+    print("Input shape:", tensor.shape)
+
     detector = kornia.feature.SOLD2_detector()
-    lines = detector(img_t)["line_segments"]
+    lines = detector(tensor)["line_segments"]
 
-    print("#Lines: ", len(lines))
+    print(f"# lines detected: {len(lines)}")
     for line in lines:
-        x0 = int(line[0])
-        y0 = int(line[1])
-        x1 = int(line[2])
-        y1 = int(line[3])
-        print("Line: ", line)
-        print(x0, y0, x1, y1)
+        x0, y0, x1, y1 = (int(line[i]) for i in range(4))
+        print(f"  ({x0:4d}, {y0:4d}) -> ({x1:4d}, {y1:4d})")
 
 
 if __name__ == "__main__":

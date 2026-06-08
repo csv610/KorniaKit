@@ -1,50 +1,42 @@
-import sys
+"""Sharpen an image using unsharp masking.
 
-import cv2
-import kornia
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
+Demonstrates:
+  - Using Kornia's UnsharpMask filter.
+  - Visualising the original, sharpened result, and difference map.
+"""
+
+from tutorials._utils import from_tensor, load_image, parse_args
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python unsharp.py <image_path>")
-        sys.exit(1)
+    """Load an image, apply unsharp masking, and show side-by-side results."""
+    (filename,) = parse_args(1, "<image_path>")
+    img = load_image(filename)
 
-    filename = sys.argv[1]
-    img: np.ndarray | None = cv2.imread(filename)
-    if img is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
+    import cv2
+    import kornia
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import torch
 
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    img_t: torch.Tensor = kornia.image_to_tensor(img)
-    in_img = img_t[None, ...].float() / 255.0
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    tensor: torch.Tensor = kornia.image.image_to_tensor(img_rgb)
+    in_img = tensor[None, ...].float() / 255.0
 
     sharpen = kornia.filters.UnsharpMask((9, 9), (2.5, 2.5))
     out_img_t: torch.Tensor = sharpen(in_img)
-    im_diff = (out_img_t - in_img).abs()
+    diff = (out_img_t - in_img).abs()
 
-    in_img_np = kornia.utils.tensor_to_image(in_img)
-    out_img_np = kornia.utils.tensor_to_image(out_img_t)
-    im_diff_np = kornia.utils.tensor_to_image(im_diff)
+    in_np: np.ndarray = from_tensor(in_img)
+    out_np: np.ndarray = from_tensor(out_img_t)
+    diff_np: np.ndarray = from_tensor(diff)
 
-    fig, axs = plt.subplots(1, 3, figsize=(16, 10))
-    axs = axs.ravel()
-
-    axs[0].axis("off")
-    axs[0].set_title("image source")
-    axs[0].imshow(in_img_np)
-
-    axs[1].axis("off")
-    axs[1].set_title("sharpened")
-    axs[1].imshow(out_img_np)
-
-    axs[2].axis("off")
-    axs[2].set_title("difference")
-    axs[2].imshow(im_diff_np)
+    fig, axes = plt.subplots(1, 3, figsize=(16, 10))
+    for ax, title, arr in zip(axes, ("Original", "Sharpened", "Difference"),
+                               (in_np, out_np, diff_np)):
+        ax.imshow(arr)
+        ax.set_title(title)
+        ax.axis("off")
     plt.show()
 
 

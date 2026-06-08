@@ -1,30 +1,44 @@
-import sys
+"""Detect lines using the Probabilistic Hough Transform.
 
-import cv2
-import kornia
-import numpy as np
-import torch
+Demonstrates:
+  - Canny edge detection with Kornia.
+  - Probabilistic Hough line detection with OpenCV.
+  - Overlaying detected lines on the original image.
+"""
+
+from tutorials._utils import load_image, parse_args
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python houghlines.py <image_path>")
-        sys.exit(1)
+    """Run Canny edge detection + Hough transform and display detected lines."""
+    (filename,) = parse_args(1, "<image_path>")
 
-    filename = sys.argv[1]
-    img: np.ndarray | None = cv2.imread(filename)
-    if img is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
+    import cv2
+    import kornia
+    import numpy as np
 
-    img_t: torch.Tensor = kornia.image_to_tensor(img)
-    img_t = img_t[None, ...].float() / 255.0
+    img = load_image(filename)
 
-    edges = kornia.filters.canny(img_t, low_threshold=100, high_threshold=200)
+    tensor = kornia.image.image_to_tensor(img)
+    tensor = tensor[None, ...].float() / 255.0
+    kornia_edges = kornia.filters.canny(tensor, low_threshold=100, high_threshold=200)
 
-    lines, _ = kornia.hough_transform(edges)
+    edges_np = kornia.utils.tensor_to_image(kornia_edges[0]) * 255
+    edges_np = edges_np.astype(np.uint8)
 
-    print(lines)
+    lines = cv2.HoughLinesP(edges_np, rho=1, theta=np.pi / 180, threshold=50,
+                            minLineLength=30, maxLineGap=10)
+
+    result = img.copy()
+    if lines is not None:
+        for x1, y1, x2, y2 in lines[:, 0]:
+            cv2.line(result, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+    print(f"Detected {len(lines) if lines is not None else 0} line segments")
+
+    cv2.imshow("Hough Lines", result)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

@@ -1,32 +1,30 @@
-import sys
+"""Load an image and display its tensor representation.
 
-import cv2
-import kornia
-import numpy as np
-import torch
+Demonstrates:
+  - Reading an image from disk with OpenCV.
+  - Converting to a Kornia tensor and inspecting its shape.
+  - Converting back to a numpy array for display.
+"""
+
+from tutorials._utils import from_tensor, load_image, parse_args, to_tensor
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python readimg.py <image_path>")
-        sys.exit(1)
+    """Load an image, convert to tensor, display shapes, and show results."""
+    (filename,) = parse_args(1, "<image_path>")
+    img = load_image(filename)
 
-    filename = sys.argv[1]
-    img: np.ndarray | None = cv2.imread(filename)
-    if img is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
-
-    cv2.imshow("Image", img)
+    import cv2
+    cv2.imshow("Original", img)
     cv2.waitKey(0)
 
-    img_t: torch.Tensor = kornia.image_to_tensor(img)
-    print(img_t.shape)
-    img_t = img_t.unsqueeze(0)
-    print(img_t.shape)
+    tensor = to_tensor(img, add_batch=True)
+    print("Tensor shape (with batch):", tensor.shape)
+    tensor_no_batch = tensor.squeeze(0)
+    print("Tensor shape (no batch):", tensor_no_batch.shape)
 
-    img_out: np.ndarray = kornia.tensor_to_image(img_t)
-    cv2.imshow("Image", img_out)
+    reconstructed = from_tensor(tensor)
+    cv2.imshow("Reconstructed", reconstructed)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

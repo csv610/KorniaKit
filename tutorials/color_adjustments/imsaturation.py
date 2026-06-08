@@ -1,34 +1,28 @@
-import sys
+"""Adjust the saturation of an image.
 
-import cv2
-import kornia
-import numpy as np
-import torch
+Demonstrates:
+  - Using Kornia's enhance.adjust_saturation to control colour intensity.
+"""
+
+from tutorials._utils import load_image, parse_args
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python imsaturation.py <image_path>")
-        sys.exit(1)
+    """Load an image, apply two saturation levels, and display results."""
+    (filename,) = parse_args(1, "<image_path>")
 
-    filename = sys.argv[1]
-    img: np.ndarray | None = cv2.imread(filename)
-    if img is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
+    import cv2
+    import kornia
 
-    cv2.imshow("Image", img)
+    img = load_image(filename)
+    cv2.imshow("Original", img)
 
-    img_t: torch.Tensor = kornia.image_to_tensor(img)
-    img_t = img_t.float() / 255.0
+    tensor = kornia.image.image_to_tensor(img).float() / 255.0
 
-    img1 = kornia.enhance.adjust_saturation(img_t, 0.4)
-    img1_out: np.ndarray = kornia.tensor_to_image(img1)
-    cv2.imshow("saturation1", img1_out)
-
-    img2 = kornia.enhance.adjust_saturation(img_t, 0.8)
-    img2_out: np.ndarray = kornia.tensor_to_image(img2)
-    cv2.imshow("saturation2", img2_out)
+    for factor, label in [(0.4, "saturation 0.4"), (0.8, "saturation 0.8")]:
+        adjusted = kornia.enhance.adjust_saturation(tensor, factor)
+        out = kornia.utils.tensor_to_image(adjusted)
+        cv2.imshow(label, out)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()

@@ -1,33 +1,29 @@
-import sys
+"""Flip an image horizontally and vertically.
 
-import cv2
-import kornia
-import numpy as np
-import torch
+Demonstrates:
+  - Using Kornia's geometry.hflip and geometry.vflip.
+  - Converting between OpenCV and Kornia formats.
+"""
+
+from tutorials._utils import from_tensor, load_image, parse_args, to_tensor
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python flip.py <image_path>")
-        sys.exit(1)
+    """Load an image, apply horizontal and vertical flips, and display."""
+    (filename,) = parse_args(1, "<image_path>")
+    img = load_image(filename)
 
-    filename = sys.argv[1]
-    img: np.ndarray | None = cv2.imread(filename)
-    if img is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
+    import cv2
+    cv2.imshow("Original", img)
 
-    cv2.imshow("Image", img)
+    import kornia
+    tensor = to_tensor(img, add_batch=False)
 
-    img_t: torch.Tensor = kornia.image_to_tensor(img)
+    flipped_h = kornia.geometry.hflip(tensor)
+    cv2.imshow("Horizontal flip", from_tensor(flipped_h))
 
-    img1 = kornia.geometry.hflip(img_t)
-    img1_out: np.ndarray = kornia.tensor_to_image(img1)
-    cv2.imshow("hflip", img1_out)
-
-    img2 = kornia.geometry.vflip(img_t)
-    img2_out: np.ndarray = kornia.tensor_to_image(img2)
-    cv2.imshow("vflip", img2_out)
+    flipped_v = kornia.geometry.vflip(tensor)
+    cv2.imshow("Vertical flip", from_tensor(flipped_v))
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()

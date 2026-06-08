@@ -1,55 +1,52 @@
-import sys
+"""Detect edges using classical operators.
 
-import cv2
-import kornia
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
-import torchvision
+Demonstrates:
+  - Sobel, Laplacian, and Canny edge detection via Kornia filters.
+  - Converting edge maps to a visual format by inverting intensities.
+"""
 
-
-def imshow(input: torch.Tensor) -> None:
-    out = torchvision.utils.make_grid(input, nrow=2, padding=5)
-    out_np: np.ndarray = kornia.utils.tensor_to_image(out)
-    plt.imshow(out_np)
-    plt.axis("off")
-    plt.show()
+from tutorials._utils import load_image, parse_args
 
 
 def main() -> None:
-    if len(sys.argv) < 3:
-        print("Usage: python edgedetection.py <image_path> <algo>")
-        print("  algo: sobel, laplacian, canny")
-        sys.exit(1)
+    """Apply the selected edge detector and display the edge map."""
+    (filename, algo) = parse_args(2, "<image_path> <algo>")
+    print("  algo: sobel, laplacian, canny")
 
-    filename = sys.argv[1]
-    img: np.ndarray | None = cv2.imread(filename)
-    if img is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
+    img = load_image(filename)
 
-    img_t: torch.Tensor = kornia.image_to_tensor(img)
-    img_t = img_t[None, ...].float() / 255.0
+    import kornia
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import torch
+    import torchvision
 
-    img_t = kornia.color.bgr_to_rgb(img_t)
-    img_t = kornia.color.rgb_to_grayscale(img_t)
+    tensor: torch.Tensor = kornia.image.image_to_tensor(img)
+    tensor = tensor[None, ...].float() / 255.0
+    tensor = kornia.color.bgr_to_rgb(tensor)
+    gray = kornia.color.rgb_to_grayscale(tensor)
 
-    algo = sys.argv[2]
+    algos = {
+        "sobel": lambda t: 1.0 - kornia.filters.sobel(t),
+        "laplacian": lambda t: 1.0 - kornia.filters.laplacian(t, kernel_size=5).clamp(0.0, 1.0),
+        "canny": lambda t: 1.0 - kornia.filters.canny(t)[0].clamp(0.0, 1.0),
+    }
 
-    if algo == "sobel":
-        edges: torch.Tensor = kornia.filters.sobel(img_t)
-        edges = 1.0 - edges
-    elif algo == "laplacian":
-        edges = kornia.filters.laplacian(img_t, kernel_size=5)
-        edges = 1.0 - edges.clamp(0.0, 1.0)
-    elif algo == "canny":
-        edges = kornia.filters.canny(img_t)[0]
-        edges = 1.0 - edges.clamp(0.0, 1.0)
-    else:
+    fn = algos.get(algo)
+    if fn is None:
         print(f"Unknown algorithm: {algo}")
+        print("Valid options: sobel, laplacian, canny")
+        import sys
         sys.exit(1)
 
-    imshow(edges)
+    edges = fn(gray)
+
+    grid = torchvision.utils.make_grid(edges, nrow=2, padding=5)
+    out_np: np.ndarray = kornia.utils.tensor_to_image(grid)
+    plt.imshow(out_np, cmap="gray")
+    plt.axis("off")
+    plt.title(f"Edge detection: {algo}")
+    plt.show()
 
 
 if __name__ == "__main__":

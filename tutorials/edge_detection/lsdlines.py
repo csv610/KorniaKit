@@ -1,32 +1,41 @@
-import sys
+"""Draw line segments on an image using SOLD² detections.
 
-import cv2
-import kornia
+Demonstrates:
+  - Using the SOLD² deep-learning line detector.
+  - Drawing detected line segments on the original image.
+  - Comparing learned vs geometric line detection.
+"""
+
+from tutorials._utils import load_image, parse_args
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python lsdlines.py <image_path>")
-        sys.exit(1)
+    """Detect line segments with SOLD², draw them, and save to disk."""
+    (filename,) = parse_args(1, "<image_path>")
 
-    filename = sys.argv[1]
-    image = cv2.imread(filename)
-    if image is None:
-        print(f"Error: could not load image {filename}")
-        sys.exit(1)
+    import cv2
+    import kornia
+    import torch
 
-    image = kornia.image_to_tensor(image)
+    img = load_image(filename)
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    gray = kornia.color.rgb_to_grayscale(image)
+    tensor: torch.Tensor = kornia.image.image_to_tensor(img_rgb)
+    tensor = tensor[None, ...].float() / 255.0
 
-    lsd = kornia.line_detector.LSDDetector()
-    lines, widths, _ = lsd(gray)
+    detector = kornia.feature.SOLD2_detector()
+    result = detector(tensor)
+    segments = result["line_segments"]
 
-    lines_endpoints = kornia.line_detector.lsd_to_lines(lines, widths)
+    print(f"Detected {len(segments)} line segments")
 
-    image_lines = kornia.drawing.draw_lines(image, lines_endpoints)
+    for line in segments:
+        x1, y1, x2, y2 = line.int().tolist()
+        cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 1)
 
-    kornia.imwrite("image_lines.jpg", image_lines)
+    output_path = "image_lines.jpg"
+    cv2.imwrite(output_path, img)
+    print(f"Saved result to {output_path}")
 
 
 if __name__ == "__main__":
